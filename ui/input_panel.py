@@ -1,12 +1,12 @@
-"""Панель ввода сообщений"""
+"""Панель ввода сообщений Chat_AG"""
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QComboBox
-from PyQt6.QtCore import pyqtSignal
-from ui.theme_config import COLORS, INPUT_STYLE
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLineEdit, QPushButton
+from PyQt6.QtCore import pyqtSignal, Qt
+from ui.theme_config import COLORS
 
 
 class InputPanel(QWidget):
-    """Панель для ввода и отправки сообщений"""
+    """Панель ввода сообщений"""
 
     send_clicked = pyqtSignal(str)
     platform_select_clicked = pyqtSignal(str)
@@ -22,12 +22,13 @@ class InputPanel(QWidget):
         """)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(6)
 
-        # Выбор платформы
+        # Выпадающий список платформ
         self.platform_combo = QComboBox()
         self.platform_combo.addItems(["Все платформы", "Twitch", "YouTube", "VK Play"])
+        self.platform_combo.setFixedWidth(160)
         self.platform_combo.setStyleSheet(f"""
             QComboBox {{
                 background-color: {COLORS['bg_input']};
@@ -35,14 +36,19 @@ class InputPanel(QWidget):
                 border: 1px solid {COLORS['border']};
                 border-radius: 4px;
                 padding: 6px 10px;
-                min-width: 140px;
-            }}
-            QComboBox:hover {{
-                background-color: {COLORS['bg_hover']};
+                font-size: 13px;
             }}
             QComboBox::drop-down {{
                 border: none;
                 width: 20px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {COLORS['bg_input']};
+                color: {COLORS['text_primary']};
+                selection-background-color: {COLORS['accent']};
+                selection-color: white;
+                border: 1px solid {COLORS['border']};
+                outline: none;
             }}
         """)
         self.platform_combo.currentTextChanged.connect(
@@ -50,10 +56,22 @@ class InputPanel(QWidget):
         )
         layout.addWidget(self.platform_combo)
 
-        # Поле ввода
+        # Поле ввода сообщения
         self.input_field = QLineEdit()
         self.input_field.setPlaceholderText("Введите сообщение...")
-        self.input_field.setStyleSheet(INPUT_STYLE)
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {COLORS['bg_input']};
+                color: {COLORS['text_primary']};
+                border: 1px solid {COLORS['border']};
+                border-radius: 4px;
+                padding: 6px 10px;
+                font-size: 13px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {COLORS['accent']};
+            }}
+        """)
         self.input_field.returnPressed.connect(self._on_send)
         layout.addWidget(self.input_field, stretch=1)
 
@@ -73,10 +91,10 @@ class InputPanel(QWidget):
                 background-color: #238636;
             }}
         """)
-        self.btn_send.clicked.connect(lambda: self.send_clicked.emit(self.input_field.text()))
+        self.btn_send.clicked.connect(self._on_send)
         layout.addWidget(self.btn_send)
 
-        # Кнопки управления звуком (добавь этот блок)
+        # Кнопки управления звуком
         self.btn_mute_chat = QPushButton("🔊 Чат")
         self.btn_mute_chat.setFixedSize(70, 28)
         self.btn_mute_chat.setStyleSheet(f"""
@@ -110,10 +128,10 @@ class InputPanel(QWidget):
         layout.addWidget(self.btn_mute_donate)
 
     def _on_send(self):
-        """Обработать отправку сообщения"""
-        message = self.input_field.text().strip()
-        if message:
-            self.send_clicked.emit(message)
+        """Отправить сообщение"""
+        text = self.input_field.text().strip()
+        if text:
+            self.send_clicked.emit(text)
             self.input_field.clear()
 
     def get_selected_platform(self) -> str:

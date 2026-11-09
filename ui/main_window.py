@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setWindowTitle("Chat_AG v1.0.0")
+        self.setWindowTitle("Chat_AG v1.0.3")
         self.resize(600, 400)
         self.setMinimumSize(300, 200)
 
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        self.title_bar = CustomTitleBar("Chat_AG v1.0.0", self)
+        self.title_bar = CustomTitleBar("Chat_AG v1.0.3", self)
         main_layout.addWidget(self.title_bar)
 
         # Кнопка обновления (в заголовке рядом с 🔑)
@@ -256,6 +256,7 @@ class MainWindow(QMainWindow):
         platform_code = platform.upper()[:2]
         self.platform_panel.increment_counter(platform_code)
 
+        # Озвучка (если не замьючено)
         try:
             from tts.manager import TTSManager
             tts = TTSManager()

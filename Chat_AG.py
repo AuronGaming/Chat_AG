@@ -9,7 +9,7 @@ def main():
     """Главная функция запуска"""
     app = QApplication(sys.argv)
     app.setApplicationName("Chat_AG")
-    app.setApplicationVersion("1.0.1")
+    app.setApplicationVersion("1.0.3")
 
     window = MainWindow()
     window.show()

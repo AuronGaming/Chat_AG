@@ -7,7 +7,7 @@ import urllib.request
 import urllib.error
 import subprocess
 import tempfile
-from PyQt6.QtCore import QObject, pyqtSignal, QThread
+from PyQt6.QtCore import QObject, pyqtSignal
 
 
 def _get_github_token():
@@ -35,10 +35,11 @@ class Updater(QObject):
 
     def __init__(self):
         super().__init__()
-        self.current_version = "1.0.1"
+        self.current_version = "1.0.3"
         self.github_token = _get_github_token()
 
     def check_for_updates(self):
+        """Проверить наличие обновлений"""
         try:
             url = f"https://api.github.com/repos/{self.GITHUB_REPO}/releases/latest"
             headers = {"Accept": "application/vnd.github.v3+json"}
@@ -71,6 +72,7 @@ class Updater(QObject):
             self.error_occurred.emit(str(e))
 
     def download_update(self, url: str):
+        """Скачать обновление"""
         try:
             headers = {"Accept": "application/octet-stream"}
             if self.github_token:
@@ -95,6 +97,7 @@ class Updater(QObject):
             self.error_occurred.emit(str(e))
 
     def install_update(self, installer_path: str):
+        """Запустить установщик"""
         try:
             subprocess.Popen([installer_path], shell=True)
             print("🚀 Запуск установщика...")
@@ -104,9 +107,10 @@ class Updater(QObject):
             self.error_occurred.emit(str(e))
 
     def _is_newer_version(self, latest: str, current: str) -> bool:
+        """Сравнить версии"""
         try:
             latest_parts = [int(x) for x in latest.split(".")]
             current_parts = [int(x) for x in current.split(".")]
             return latest_parts > current_parts
-        except:
+        except Exception:
             return False

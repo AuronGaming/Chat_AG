@@ -17,9 +17,9 @@ class SettingsWindow(QMainWindow):
     SECTIONS = [
         ("Общие", 24, "visual"),
         ("Соединения", 33, "connections"),
-        ("Озвучивание текста", 32, "tts"),
-        ("Система оповещений", 16, "alerts_system"),
-        ("Оповещения в чате", 16, "chat_alerts"),
+        ("Озвучка чата", 32, "tts"),  # ← озвучка сообщений чата
+        ("Озвучка донатов", 16, "alerts_system"),  # ← озвучка донатов по площадкам
+        ("Звуки событий", 16, "chat_alerts"),  # ← звуки подписок, хостов, рейдов
         ("Тема оформления", 73, "theme"),
         ("Hotkeys", 6, "hotkeys"),
         ("Валюта", 5, "currency"),
@@ -27,9 +27,9 @@ class SettingsWindow(QMainWindow):
     ]
 
     def __init__(self, parent=None):
-        super().__init__(None)  # Без родителя
+        super().__init__(None)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.CustomizeWindowHint)
-        self.setWindowTitle("Chat_AG - Настройки")
+        self.setWindowTitle("Chat_AG v1.0.2 - Настройки")
         self.setMinimumSize(900, 600)
         self.resize(900, 600)
 
@@ -109,12 +109,9 @@ class SettingsWindow(QMainWindow):
         content_lay.addLayout(btns)
         main_lay.addWidget(content, stretch=1)
 
-        # Загружаем первую секцию сразу
         self._load_section(0)
-
         self.sections_list.setCurrentRow(0)
         self.sections_list.currentRowChanged.connect(self._on_row_changed)
-
         self._center_on_screen()
 
     def _center_on_screen(self):
@@ -129,11 +126,9 @@ class SettingsWindow(QMainWindow):
             self._load_section(row)
 
     def _load_section(self, row):
-        """Загрузить секцию по индексу"""
         if row < 0 or row >= len(self.SECTIONS):
             return
 
-        # Удаляем старый виджет
         if self.current_section_widget:
             old = self.scroll_area.widget()
             if old:
@@ -171,6 +166,8 @@ class SettingsWindow(QMainWindow):
             self.current_section_widget = Section()
         except Exception as e:
             print(f"⚠️ Ошибка загрузки секции {section_id}: {e}")
+            import traceback
+            traceback.print_exc()
             from settings.sections.placeholder import PlaceholderSection
             self.current_section_widget = PlaceholderSection(name)
 

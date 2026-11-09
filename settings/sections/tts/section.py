@@ -17,11 +17,11 @@ class Section(QWidget):
         lay.setContentsMargins(15, 10, 15, 10)
         lay.setSpacing(12)
 
-        title = QLabel("Озвучивание текста")
+        title = QLabel("Озвучка чата")
         title.setStyleSheet(f"font-size: 22px; color: {COLORS['accent']}; font-weight: bold;")
         lay.addWidget(title)
 
-        sub = QLabel("Настройки озвучивания сообщений из чата.")
+        sub = QLabel("Настройки голоса и параметров озвучки сообщений чата.")
         sub.setStyleSheet(f"font-size: 12px; color: {COLORS['text_secondary']}; padding-bottom: 10px;")
         lay.addWidget(sub)
 
