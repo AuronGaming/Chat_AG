@@ -1,32 +1,13 @@
 """Иконка в системном трее Chat_AG"""
 
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QApplication, QMessageBox
-from PyQt6.QtGui import QIcon, QAction, QPixmap, QPainter, QColor, QFont
+from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt
-
-
-def create_ag_icon(size=32) -> QIcon:
-    """Создать иконку: зелёные буквы AG на чёрном фоне"""
-    pixmap = QPixmap(size, size)
-    pixmap.fill(QColor(0, 0, 0))
-
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-
-    painter.fillRect(0, 0, size, size, QColor(0, 0, 0))
-
-    painter.setPen(QColor("#2ea043"))
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    painter.setFont(QFont("Segoe UI", size // 3, QFont.Weight.Bold))
-    painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "AG")
-
-    painter.end()
-    return QIcon(pixmap)
+import os
 
 
 class TrayIcon(QSystemTrayIcon):
-    """Иконка в системном трее"""
+    """Иконка в трее с иконкой AG"""
 
     _instance = None
 
@@ -43,8 +24,17 @@ class TrayIcon(QSystemTrayIcon):
         self._main_window = main_window
         super().__init__()
 
-        self.setIcon(create_ag_icon(32))
-        self.setToolTip("Chat_AG v1.0.0")
+        # Ищем иконку AG
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'chat_ag_icon.ico')
+        if os.path.exists(icon_path):
+            self.setIcon(QIcon(icon_path))
+            print(f"✅ Иконка трея загружена: {icon_path}")
+        else:
+            # Если нет файла — создаём программно
+            self._create_ag_icon()
+            print("⚠️ Иконка создана программно")
+
+        self.setToolTip("Chat_AG v1.0.3")
 
         # Создаем контекстное меню
         menu = QMenu()
@@ -78,6 +68,27 @@ class TrayIcon(QSystemTrayIcon):
         self.activated.connect(self._on_activated)
         self.show()
         print("✅ Иконка в трее создана")
+
+    def _create_ag_icon(self):
+        """Создать иконку программно (AG на черном фоне)"""
+        from PyQt6.QtGui import QPixmap, QPainter, QColor, QFont
+        from PyQt6.QtCore import Qt
+
+        size = 32
+        pixmap = QPixmap(size, size)
+        pixmap.fill(QColor(0, 0, 0))  # Черный фон
+
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+
+        # Зеленый текст AG
+        painter.setPen(QColor("#2ea043"))
+        painter.setFont(QFont("Segoe UI", size // 3, QFont.Weight.Bold))
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "AG")
+
+        painter.end()
+        self.setIcon(QIcon(pixmap))
 
     def _on_activated(self, reason):
         """Обработка активации иконки в трее (клик)"""
@@ -116,7 +127,7 @@ class TrayIcon(QSystemTrayIcon):
         """Полный и принудительный выход из приложения без вопросов"""
         print("🚪 Принудительный выход из приложения...")
 
-        # Сбрасываем выбор закрытия, чтобы в следующий раз программа вела себя стандартно
+        # Сбрасываем выбор закрытия
         try:
             from core.settings_manager import SettingsManager
             s = SettingsManager()

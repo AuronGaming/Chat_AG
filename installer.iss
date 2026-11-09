@@ -26,15 +26,18 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Создать ярлык на рабочем столе"; GroupDescription: "Дополнительные ярлыки:"; Flags: unchecked
-Name: "autostart"; Description: "Запускать при старте Windows"; GroupDescription: "Автозапуск:"; Flags: unchecked
 
 [Files]
 Source: "dist\Chat_AG\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "chat_ag_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "chat_ag_icon.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "config.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Удалить {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\Chat_AG"; Filename: "{app}\Chat_AG.exe"; IconFilename: "{app}\chat_ag_icon.ico"
+Name: "{autodesktop}\Chat_AG"; Filename: "{app}\Chat_AG.exe"; IconFilename: "{app}\chat_ag_icon.ico"; Tasks: desktopicon
+
+
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Запустить Chat_AG"; Flags: nowait postinstall skipifsilent
