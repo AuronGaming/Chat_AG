@@ -26,7 +26,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Создать ярлык на рабочем столе"; GroupDescription: "Дополнительные ярлыки:"; Flags: unchecked
-
+Name: "autostart"; Description: "Запускать Chat_AG при старте Windows"; GroupDescription: "Дополнительные ярлыки:"; Flags: unchecked
 [Files]
 Source: "dist\Chat_AG\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "chat_ag_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
