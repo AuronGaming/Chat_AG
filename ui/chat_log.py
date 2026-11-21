@@ -1,179 +1,140 @@
-"""Виджет лога чата Chat_AG"""
+"""Виджет лога чата Chat_AG с иконками справа"""
 
-from PyQt6.QtWidgets import QTextBrowser, QWidget, QVBoxLayout
-from PyQt6.QtCore import Qt, QDateTime, QRect
-from PyQt6.QtGui import QTextCursor, QColor, QPainter, QPixmap, QFont, QImage
-from PyQt6.QtCore import QByteArray, QBuffer
-from base64 import b64encode
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel
+from PyQt6.QtCore import Qt, QDateTime
 from ui.theme_config import COLORS
-from ui.assets import create_platform_icon_large
 
 
-class ChatLogWidget(QTextBrowser):
-    """Виджет для отображения сообщений чата с иконками и временем"""
+PLATFORM_COLORS = {
+    "twitch": "#9146FF",
+    "youtube": "#FF0000",
+    "vk_play": "#0077FF",
+    "donationalerts": "#FFD700",
+    "Система": "#a0a0a0",
+}
 
+PLATFORM_ICONS = {
+    "twitch": "🟣",
+    "youtube": "🔴",
+    "vk_play": "🔵",
+    "donationalerts": "🟡",
+    "Система": "⚙",
+}
+
+
+class ChatLogWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setReadOnly(True)
-        self.setOpenExternalLinks(False)
+        self.setStyleSheet(f"background-color: {COLORS['bg_main']};")
 
-        # Создаём паттерн-фон
-        self._bg_pixmap = self._create_background_pattern(256)
+        # Основной layout
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        self.setStyleSheet(f"""
-            QTextBrowser {{
-                background-color: transparent;
+        # Контейнер для чата (занимает всё пространство)
+        chat_container = QWidget()
+        chat_container.setStyleSheet(f"background-color: {COLORS['bg_main']};")
+        chat_layout = QVBoxLayout(chat_container)
+        chat_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.text_area = QTextEdit()
+        self.text_area.setReadOnly(True)
+        self.text_area.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {COLORS['bg_main']};
                 color: {COLORS['text_primary']};
-                font-family: 'Segoe UI', sans-serif;
+                border: none;
                 font-size: 13px;
-                border: 1px solid {COLORS['border']};
-                border-radius: 4px;
-                padding: 8px;
+                padding: 5px;
             }}
-            QTextBrowser::viewport {{
-                background: transparent;
+            QScrollBar:vertical {{
+                background-color: {COLORS['bg_secondary']};
+                width: 10px;
+                border-radius: 5px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {COLORS['border']};
+                border-radius: 5px;
+                min-height: 20px;
+            }}
+        """)
+        chat_layout.addWidget(self.text_area)
+
+        main_layout.addWidget(chat_container, stretch=1)
+
+        # Узкая полоса справа с иконками (50px)
+        right_panel = QWidget()
+        right_panel.setFixedWidth(50)
+        right_panel.setStyleSheet(f"""
+            QWidget {{
+                background-color: {COLORS['bg_main']};
+                border-left: 1px solid {COLORS['border']};
             }}
         """)
 
-        # Устанавливаем фон через палитру
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(self.backgroundRole(), QColor(COLORS['bg_main']))
-        self.setPalette(palette)
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(5, 10, 5, 10)
+        right_layout.setSpacing(15)
 
-    def _create_background_pattern(self, size: int) -> QPixmap:
-        """Создать паттерн-фон для чата как в RutonyChat"""
-        pixmap = QPixmap(size, size)
-        pixmap.fill(QColor('#0d0d1a'))
+        # Иконки в столбик
+        icons = ["🎮", "🎬", "🎸", "🎬", "🎤", "🎯", "🎤", "🎤", "🎲", "🎧", "🎧"]
+        for icon in icons:
+            lbl = QLabel(icon)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setStyleSheet("""
+                QLabel {
+                    background-color: transparent;
+                    color: rgba(255, 255, 255, 30);
+                    font-size: 20px;
+                    font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji";
+                }
+            """)
+            right_layout.addWidget(lbl)
 
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        # Символы для паттерна
-        symbols = ['🎮', '🎬', '🎤', '🎧', '📷', '🎥', '🎯', '🎲', '🎸', '🎺', '🕹️', '🎪']
-
-        painter.setFont(QFont("Segoe UI Emoji", 14))
-
-        grid_size = 4
-        cell_size = size // grid_size
-
-        for i in range(grid_size):
-            for j in range(grid_size):
-                x = cell_size * i + cell_size // 2 - 7
-                y = cell_size * j + cell_size // 2 + 5
-
-                symbol_idx = (i * grid_size + j) % len(symbols)
-                symbol = symbols[symbol_idx]
-
-                painter.setPen(QColor('#1a1a2e'))
-                painter.drawText(x, y, symbol)
-
-        painter.end()
-        return pixmap
-
-    def paintEvent(self, event):
-        """Рисуем фон паттерном"""
-        painter = QPainter(self.viewport())
-
-        # Рисуем паттерн повторяющимся тайлом
-        if not self._bg_pixmap.isNull():
-            painter.setOpacity(0.3)
-            x = 0
-            while x < self.viewport().width():
-                y = 0
-                while y < self.viewport().height():
-                    painter.drawPixmap(x, y, self._bg_pixmap)
-                    y += self._bg_pixmap.height()
-                x += self._bg_pixmap.width()
-            painter.setOpacity(1.0)
-
-        painter.end()
-
-        # Рисуем текст поверх
-        super().paintEvent(event)
-
-    def _get_time(self) -> str:
-        """Получить текущее время в формате ЧЧ:ММ"""
-        return QDateTime.currentDateTime().toString("HH:mm")
-
-    def _pixmap_to_base64(self, pixmap: QPixmap) -> str:
-        """Конвертировать QPixmap в base64 строку"""
-        image = QImage(pixmap.toImage())
-        buffer = QByteArray()
-        buf = QBuffer(buffer)
-        buf.open(QBuffer.OpenModeFlag.WriteOnly)
-        image.save(buf, "PNG")
-        return b64encode(buffer.data()).decode('utf-8')
-
-    def add_system_message(self, platform: str, message: str, level: str = "INFO"):
-        """Добавить системное сообщение с иконкой платформы"""
-        colors = {
-            "INFO": COLORS['text_primary'],
-            "SUCCESS": COLORS['accent'],
-            "ERROR": COLORS['error'],
-            "WARNING": "#ffaa00"
-        }
-        color = colors.get(level, COLORS['text_primary'])
-        time_str = self._get_time()
-
-        # Иконка платформы
-        icon = create_platform_icon_large(platform.lower(), 14)
-        pixmap = icon.pixmap(16, 16)
-        b64 = self._pixmap_to_base64(pixmap)
-
-        html = f'''
-        <div style="margin: 2px 0;">
-            <span style="color: {COLORS['text_secondary']}; font-size: 11px;">[{time_str}]</span>
-            <img src="data:image/png;base64,{b64}" width="16" height="16" style="vertical-align: middle; margin: 0 4px;">
-            <span style="color: {color}; font-weight: bold;">{platform}:</span>
-            <span style="color: {color};"> {message}</span>
-        </div>
-        '''
-        self.append(html)
-        self._scroll_to_bottom()
+        right_layout.addStretch()
+        main_layout.addWidget(right_panel)
 
     def add_chat_message(self, platform: str, username: str, message: str,
-                         color: str = COLORS['text_primary'], badges: list = None,
-                         emotes: dict = None, gifs: list = None):
-        """Добавить сообщение из чата с иконкой и временем"""
+                         color: str = "#FFFFFF", emotes: dict = None, gifs: list = None):
+        time = QDateTime.currentDateTime().toString("hh:mm")
+        platform_color = PLATFORM_COLORS.get(platform.lower(), color)
+        icon = PLATFORM_ICONS.get(platform.lower(), "💬")
 
-        # ОТЛАДКА: показываем что пришло
-        print(f"📥 ChatLog получил: platform='{platform}', username='{username}', message='{message}'")
+        platform_tag = f'<span style="color: {platform_color}; font-weight: bold;">{icon} {platform}</span>'
+        user_tag = f'<span style="color: {color}; font-weight: bold;">{username}</span>'
 
-        time_str = self._get_time()
-        # ... остальной код без изменений
+        html = f'''<div style="margin: 2px 0; padding: 2px 0;">
+            <span style="color: {COLORS['text_secondary']}; font-size: 11px;">[{time}]</span>
+            {platform_tag}: {user_tag}: {message}
+        </div>'''
 
-        # Иконка платформы
-        icon = create_platform_icon_large(platform.lower(), 14)
-        pixmap = icon.pixmap(16, 16)
-        b64 = self._pixmap_to_base64(pixmap)
+        self.text_area.append(html)
+        self._scroll_to_bottom()
 
-        # Бейджи
-        badges_html = ""
-        if badges:
-            for badge in badges:
-                badges_html += f'<span style="color:{COLORS["accent"]}; font-size:11px;">[{badge}]</span> '
+    def add_system_message(self, platform: str, message: str, level: str = "INFO"):
+        time = QDateTime.currentDateTime().toString("hh:mm")
+        colors = {
+            "INFO": COLORS['text_secondary'],
+            "SUCCESS": COLORS['success'],
+            "WARNING": COLORS['warning'],
+            "ERROR": COLORS['error'],
+        }
+        color = colors.get(level, COLORS['text_secondary'])
+        icon = PLATFORM_ICONS.get(platform, "ℹ")
 
-        # Экранирование HTML
-        safe_message = message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        platform_tag = f'<span style="color: {color}; font-weight: bold;">{icon} {platform}</span>'
+        html = f'''<div style="margin: 2px 0;">
+            <span style="color: {COLORS['text_secondary']}; font-size: 11px;">[{time}]</span>
+            {platform_tag}: <span style="color: {color};">{message}</span>
+        </div>'''
 
-        html = f'''
-        <div style="margin: 2px 0;">
-            <span style="color: {COLORS['text_secondary']}; font-size: 11px;">[{time_str}]</span>
-            <img src="data:image/png;base64,{b64}" width="16" height="16" style="vertical-align: middle; margin: 0 4px;">
-            {badges_html}
-            <span style="color: {color}; font-weight: bold;">{username}:</span>
-            <span style="color: {COLORS['text_primary']};"> {safe_message}</span>
-        </div>
-        '''
-        self.append(html)
+        self.text_area.append(html)
         self._scroll_to_bottom()
 
     def _scroll_to_bottom(self):
-        """Прокрутить вниз"""
-        scrollbar = self.verticalScrollBar()
+        scrollbar = self.text_area.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
-    def clear_log(self):
-        """Очистить лог"""
-        self.clear()
+    def clear(self):
+        self.text_area.clear()

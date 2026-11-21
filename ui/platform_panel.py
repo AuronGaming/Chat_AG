@@ -1,154 +1,88 @@
-"""Панель платформ Chat_AG"""
+"""Панель статусов платформ — точно как на скрине"""
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QToolButton
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from ui.theme_config import COLORS
-from ui.assets import create_platform_icon
 
 
 class PlatformPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {COLORS['bg_main']};
-                border-top: 1px solid {COLORS['border']};
-            }}
-        """)
+        self.setFixedHeight(30)
+        self.setStyleSheet(f"background-color: {COLORS['bg_secondary']}; border-top: 1px solid {COLORS['border']};")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(2)
+        layout.setSpacing(6)
 
-        # Счётчик подключённых платформ (вместо общего # 0)
-        self.connected_label = QLabel("# 0")
-        self.connected_label.setStyleSheet(f"""
-            QLabel {{
-                color: {COLORS['text_secondary']};
-                font-size: 11px;
-                font-weight: bold;
-                padding: 0 2px;
-            }}
-        """)
-        layout.addWidget(self.connected_label)
+        # Общий счётчик
+        self.counter_label = QLabel("# 0")
+        self.counter_label.setStyleSheet(self._label_style(COLORS['text_secondary'], COLORS['border'], 1))
+        layout.addWidget(self.counter_label)
 
-        self.platform_buttons = {}
-        self.count_labels = {}
-        self.platform_containers = {}
-        self.active_platforms = set()
+        # Платформы: U(twitch), Y(outube), VK, GG, K(ick), T(rovo), R(ooter)
+        self.platforms = {
+            'U': self._create_platform_counter('U', '#9146FF'),
+            'Y': self._create_platform_counter('Y', '#FF0000'),
+            'VK': self._create_platform_counter('VK', '#0077FF'),
+            'GG': self._create_platform_counter('GG', '#FFD700'),
+            'K': self._create_platform_counter('K', '#FF69B4'),
+            'T': self._create_platform_counter('T', '#00FFFF'),
+            'R': self._create_platform_counter('R', '#FF4500'),
+        }
 
-        platforms = [
-            ("twitch", "#9146ff"),
-            ("youtube", "#ff0000"),
-            ("vk", "#0077ff"),
-            ("goodgame", "#ff6600"),
-            ("kick", "#53fc18"),
-            ("trovo", "#7b2cbf"),
-            ("rutube", "#0055ff"),
-        ]
-
-        for platform_id, color in platforms:
-            # Контейнер с зелёной рамкой для иконки + счётчика
-            container = QWidget()
-            container.setFixedHeight(18)
-            container.setStyleSheet(f"""
-                QWidget {{
-                    border: 1px solid {COLORS['border']};
-                    border-radius: 3px;
-                    background-color: transparent;
-                    padding: 0px;
-                }}
-            """)
-
-            container_layout = QHBoxLayout(container)
-            container_layout.setContentsMargins(1, 0, 1, 0)
-            container_layout.setSpacing(1)
-
-            # Иконка платформы
-            btn = QToolButton()
-            icon = create_platform_icon(platform_id, 14)
-            btn.setIcon(icon)
-            btn.setIconSize(QSize(14, 14))
-            btn.setFixedSize(16, 16)
-            btn.setStyleSheet("""
-                QToolButton {
-                    background-color: transparent;
-                    border: none;
-                    padding: 0;
-                }
-            """)
-            container_layout.addWidget(btn)
-            self.platform_buttons[platform_id] = btn
-
-            # Счётчик (внутри того же контейнера)
-            count = QLabel("0")
-            count.setStyleSheet(f"""
-                QLabel {{
-                    color: {COLORS['text_primary']};
-                    font-size: 11px;
-                    padding: 0 2px;
-                }}
-            """)
-            container_layout.addWidget(count)
-            self.count_labels[platform_id] = count
-
-            layout.addWidget(container)
-            self.platform_containers[platform_id] = container
+        for label in self.platforms.values():
+            layout.addWidget(label)
 
         layout.addStretch()
 
+        self.status_label = QLabel("Не подключено")
+        self.status_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px;")
+        layout.addWidget(self.status_label)
+
+    def _label_style(self, text_color: str, border_color: str, border_width: int) -> str:
+        return f"""
+            QLabel {{
+                background-color: {COLORS['bg_input']};
+                color: {text_color};
+                border: {border_width}px solid {border_color};
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+        """
+
+    def _create_platform_counter(self, code: str, color: str) -> QLabel:
+        label = QLabel(f"{code} 0")
+        label.setStyleSheet(self._label_style(COLORS['text_secondary'], COLORS['border'], 1))
+        label.setProperty("platform_code", code)
+        label.setProperty("count", 0)
+        label.setProperty("active", False)
+        label.setProperty("platform_color", color)
+        return label
+
     def increment_counter(self, platform_code: str):
-        platform_map = {
-            "TW": "twitch", "YO": "youtube", "YT": "youtube",
-            "VK": "vk", "GO": "goodgame", "GG": "goodgame",
-            "KI": "kick", "KK": "kick", "TR": "trovo", "TV": "trovo",
-            "RU": "rutube", "RT": "rutube",
-        }
-        platform_id = platform_map.get(platform_code, platform_code.lower())
-
-        if platform_id in self.count_labels:
-            label = self.count_labels[platform_id]
-            current = int(label.text())
-            new_value = current + 1
-            label.setText(str(new_value))
-
-    def reset_counters(self):
-        for label in self.count_labels.values():
-            label.setText("0")
+        if platform_code in self.platforms:
+            label = self.platforms[platform_code]
+            count = label.property("count") or 0
+            count += 1
+            label.setProperty("count", count)
+            label.setText(f"{platform_code} {count}")
 
     def set_platform_active(self, platform_code: str, active: bool):
-        platform_map = {
-            "TW": "twitch", "YO": "youtube", "YT": "youtube",
-            "VK": "vk", "GO": "goodgame", "GG": "goodgame",
-            "KI": "kick", "KK": "kick", "TR": "trovo", "TV": "trovo",
-            "RU": "rutube", "RT": "rutube",
-        }
-        platform_id = platform_map.get(platform_code, platform_code.lower())
-
-        if platform_id in self.platform_containers:
-            container = self.platform_containers[platform_id]
-
+        """Зелёная обводка при подключении"""
+        if platform_code in self.platforms:
+            label = self.platforms[platform_code]
+            label.setProperty("active", active)
             if active:
-                self.active_platforms.add(platform_id)
-                container.setStyleSheet(f"""
-                    QWidget {{
-                        border: 1px solid {COLORS['accent']};
-                        border-radius: 3px;
-                        background-color: {COLORS['accent']}15;
-                        padding: 0px 1px;
-                    }}
-                """)
+                label.setStyleSheet(self._label_style(COLORS['text_primary'], COLORS['accent'], 2))
             else:
-                self.active_platforms.discard(platform_id)
-                container.setStyleSheet(f"""
-                    QWidget {{
-                        border: 1px solid {COLORS['border']};
-                        border-radius: 3px;
-                        background-color: transparent;
-                        padding: 0px 1px;
-                    }}
-                """)
+                color = label.property("platform_color") or COLORS['border']
+                label.setStyleSheet(self._label_style(COLORS['text_secondary'], COLORS['border'], 1))
 
-            # Обновляем счётчик подключённых платформ
-            self.connected_label.setText(f"# {len(self.active_platforms)}")
+    def reset_counters(self):
+        for label in self.platforms.values():
+            label.setProperty("count", 0)
+            code = label.property("platform_code")
+            label.setText(f"{code} 0")
+        self.counter_label.setText("# 0")

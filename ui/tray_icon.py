@@ -30,7 +30,6 @@ class TrayIcon(QSystemTrayIcon):
             self.setIcon(QIcon(icon_path))
             print(f"✅ Иконка трея загружена: {icon_path}")
         else:
-            # Если нет файла — создаём программно
             self._create_ag_icon()
             print("⚠️ Иконка создана программно")
 
@@ -53,7 +52,6 @@ class TrayIcon(QSystemTrayIcon):
 
         menu.addSeparator()
 
-        # Пункт для сброса выбора закрытия
         reset_close_action = QAction("🔄 Сбросить выбор закрытия", main_window)
         reset_close_action.triggered.connect(self._reset_close_choice)
         menu.addAction(reset_close_action)
@@ -76,13 +74,12 @@ class TrayIcon(QSystemTrayIcon):
 
         size = 32
         pixmap = QPixmap(size, size)
-        pixmap.fill(QColor(0, 0, 0))  # Черный фон
+        pixmap.fill(QColor(0, 0, 0))
 
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
 
-        # Зеленый текст AG
         painter.setPen(QColor("#2ea043"))
         painter.setFont(QFont("Segoe UI", size // 3, QFont.Weight.Bold))
         painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "AG")
@@ -124,10 +121,9 @@ class TrayIcon(QSystemTrayIcon):
             print(f"⚠️ Ошибка сброса: {e}")
 
     def _quit_app(self):
-        """Полный и принудительный выход из приложения без вопросов"""
+        """Полный и принудительный выход из приложения"""
         print("🚪 Принудительный выход из приложения...")
 
-        # Сбрасываем выбор закрытия
         try:
             from core.settings_manager import SettingsManager
             s = SettingsManager()
@@ -137,7 +133,6 @@ class TrayIcon(QSystemTrayIcon):
         except Exception:
             pass
 
-        # Принудительно завершаем приложение
         QApplication.quit()
 
     @classmethod

@@ -24,21 +24,38 @@ class SettingsManager:
 
         self.defaults = {
             "connections": {
-                "twitch": {"enabled": False, "nickname": "", "site": "", "token": ""},
+                "twitch": {"enabled": False, "nickname": "", "token": "", "channel": ""},
                 "youtube": {"enabled": False, "api_key": "", "channel_id": ""},
-                "vk_play": {"enabled": False, "login": "", "password": "", "channel_id": ""}
+                "vk_play": {"enabled": False, "login": "", "password": "", "channel_id": ""},
+                "donation_alerts": {"enabled": False, "token": ""}
             },
             "tts": {
                 "enabled": False,
                 "voice_id": "",
                 "volume": 100,
                 "speed": 0,
-                "template": "$text"
+                "template": "$text",
+                "mute_chat": False,
+                "mute_donate": False
+            },
+            "donate_tts": {
+                "twitch_bits": False,
+                "twitch_sub": False,
+                "yt_superchat": False,
+                "yt_member": False,
+                "vk_donate": False,
+                "da_donate": False,
+                "se_donate": False
+            },
+            "event_sounds": {
+                "mention": False,
+                "first_msg": False
             },
             "theme": {
                 "accent_color": "#2ea043",
                 "font_size": 13
-            }
+            },
+            "close_action": "ask"
         }
 
         self.settings = self._load()

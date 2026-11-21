@@ -6,7 +6,6 @@ from PyQt6.QtCore import QObject, pyqtSignal
 class EventBus(QObject):
     """Центральная шина событий для связи между модулями"""
 
-    # Сигналы объявлены на уровне класса
     chat_message = pyqtSignal(str, str, str, str, dict, list)
     system_message = pyqtSignal(str, str, str)
     platform_connected = pyqtSignal(str, str)

@@ -1,39 +1,38 @@
-"""Окно настроек Chat_AG"""
+"""Окно настроек Chat_AG (Маршрутизатор)"""
 
 from PyQt6.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout,
-                             QListWidget, QListWidgetItem,
-                             QWidget, QPushButton, QScrollArea, QSplitter,
-                             QApplication)
-from PyQt6.QtCore import Qt, pyqtSignal
+                             QListWidget, QListWidgetItem, QWidget,
+                             QPushButton, QScrollArea, QSplitter, QApplication)
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
 from ui.theme_config import COLORS, BUTTON_DEFAULT, BUTTON_ACCENT, LIST_STYLE
 from ui.custom_title_bar import CustomTitleBar
+from ui.settings import TTSSection, DonateTTSSection, EventSoundsSection, ConnectionsSection, PlaceholderSection
 
 
 class SettingsWindow(QMainWindow):
-    """Окно настроек приложения"""
-
     settings_applied = pyqtSignal()
 
     SECTIONS = [
-        ("Общие", 24, "visual"),
+        ("Общие", 24, "general"),
         ("Соединения", 33, "connections"),
-        ("Озвучка чата", 32, "tts"),  # ← озвучка сообщений чата
-        ("Озвучка донатов", 16, "alerts_system"),  # ← озвучка донатов по площадкам
-        ("Звуки событий", 16, "chat_alerts"),  # ← звуки подписок, хостов, рейдов
-        ("Тема оформления", 73, "theme"),
-        ("Hotkeys", 6, "hotkeys"),
-        ("Валюта", 5, "currency"),
-        ("Прочее", 2, "other"),
+        ("Озвучка чата", 32, "tts"),
+        ("Озвучка донатов", 16, "donate_tts"),
+        ("Звуки событий", 16, "event_sounds"),
+        ("Тема оформления", 73, "general"),
+        ("Hotkeys", 6, "general"),
+        ("Валюта", 5, "general"),
+        ("Прочее", 2, "general"),
     ]
 
-    def __init__(self, parent=None):
-        super().__init__(None)
+    def __init__(self, main_window, parent=None):
+        super().__init__(parent)
+        self.main_window = main_window
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.CustomizeWindowHint)
-        self.setWindowTitle("Chat_AG v1.0.2 - Настройки")
+        self.setWindowTitle("Chat_AG v1.0.3 - Настройки")
         self.setMinimumSize(900, 600)
         self.resize(900, 600)
-
         self.current_section_widget = None
+        self._drag_pos = None
 
         central = QWidget()
         central.setStyleSheet(f"background-color: {COLORS['bg_main']};")
@@ -77,7 +76,6 @@ class SettingsWindow(QMainWindow):
             QScrollBar:vertical {{ background-color: {COLORS['bg_secondary']}; width: 10px; border-radius: 5px; }}
             QScrollBar::handle:vertical {{ background-color: {COLORS['border']}; border-radius: 5px; min-height: 20px; }}
         """)
-
         right_lay.addWidget(self.scroll_area)
         splitter.addWidget(right)
         splitter.setSizes([250, 650])
@@ -86,20 +84,11 @@ class SettingsWindow(QMainWindow):
 
         btns = QHBoxLayout()
         btns.addStretch()
+
         btn_cancel = QPushButton("Отмена")
         btn_cancel.setStyleSheet(BUTTON_DEFAULT)
         btn_cancel.clicked.connect(self.close)
         btns.addWidget(btn_cancel)
-
-        btn_apply = QPushButton("Применить")
-        btn_apply.setStyleSheet(f"""
-            QPushButton {{ background-color: {COLORS['bg_input']}; color: {COLORS['accent']};
-                border: 1px solid {COLORS['accent']}; border-radius: 4px; padding: 6px 16px;
-                font-size: 13px; font-weight: bold; }}
-            QPushButton:hover {{ background-color: {COLORS['bg_hover']}; }}
-        """)
-        btn_apply.clicked.connect(self._apply_settings)
-        btns.addWidget(btn_apply)
 
         btn_ok = QPushButton("ОК")
         btn_ok.setStyleSheet(BUTTON_ACCENT)
@@ -112,14 +101,35 @@ class SettingsWindow(QMainWindow):
         self._load_section(0)
         self.sections_list.setCurrentRow(0)
         self.sections_list.currentRowChanged.connect(self._on_row_changed)
-        self._center_on_screen()
 
-    def _center_on_screen(self):
         screen = QApplication.primaryScreen()
         if screen:
             g = screen.geometry()
             self.move(max(0, (g.width() - self.width()) // 2),
                       max(0, (g.height() - self.height()) // 2))
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Проверяем, что клик не по кнопкам и не по списку
+            pos = event.pos()
+            if (pos.y() < 40 and  # Клик в области заголовка
+                    not self.sections_list.geometry().contains(pos) and
+                    not self.scroll_area.geometry().contains(pos)):
+                self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton and self._drag_pos:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            event.accept()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = None
+        super().mouseReleaseEvent(event)
 
     def _on_row_changed(self, row):
         if row >= 0:
@@ -139,58 +149,48 @@ class SettingsWindow(QMainWindow):
         name, count, section_id = self.SECTIONS[row]
 
         try:
-            if section_id == "visual":
-                from settings.sections.visual.section import Section
+            if section_id == "tts":
+                self.current_section_widget = TTSSection()
+            elif section_id == "donate_tts":
+                self.current_section_widget = DonateTTSSection()
+            elif section_id == "event_sounds":
+                self.current_section_widget = EventSoundsSection()
             elif section_id == "connections":
-                from settings.sections.connections.section import Section
-            elif section_id == "tts":
-                from settings.sections.tts.section import Section
-            elif section_id == "alerts_system":
-                from settings.sections.alerts_system.section import Section
-            elif section_id == "chat_alerts":
-                from settings.sections.chat_alerts.section import Section
-            elif section_id == "theme":
-                from settings.sections.theme.section import Section
-            elif section_id == "hotkeys":
-                from settings.sections.hotkeys.section import Section
-            elif section_id == "currency":
-                from settings.sections.currency.section import Section
-            elif section_id == "other":
-                from settings.sections.other.section import Section
+                self.current_section_widget = ConnectionsSection()
+                if hasattr(self.current_section_widget, 'connect_requested'):
+                    self.current_section_widget.connect_requested.connect(self._on_connect_platform)
+                if hasattr(self.current_section_widget, 'disconnect_requested'):
+                    self.current_section_widget.disconnect_requested.connect(self._on_disconnect_platform)
             else:
-                from settings.sections.placeholder import PlaceholderSection
                 self.current_section_widget = PlaceholderSection(name)
-                self.scroll_area.setWidget(self.current_section_widget)
-                return
-
-            self.current_section_widget = Section()
         except Exception as e:
             print(f"⚠️ Ошибка загрузки секции {section_id}: {e}")
             import traceback
             traceback.print_exc()
-            from settings.sections.placeholder import PlaceholderSection
             self.current_section_widget = PlaceholderSection(name)
 
         if self.current_section_widget:
             self.scroll_area.setWidget(self.current_section_widget)
 
-    def _apply_settings(self):
-        print("💾 Применение настроек...")
-        if hasattr(self.current_section_widget, 'save_data'):
-            try:
-                self.current_section_widget.save_data()
-                self.settings_applied.emit()
-            except Exception as e:
-                print(f"⚠️ Ошибка: {e}")
+    def _on_connect_platform(self, platform: str, config: dict):
+        """Передать запрос на подключение в главное окно"""
+        if self.main_window and hasattr(self.main_window, '_start_platform'):
+            self.main_window._start_platform(platform, config)
+            print(f"🔌 Запрос на подключение: {platform}")
+
+    def _on_disconnect_platform(self, platform: str):
+        """Передать запрос на отключение в главное окно"""
+        if self.main_window and hasattr(self.main_window, '_stop_platform'):
+            self.main_window._stop_platform(platform)
+            print(f"🔌 Запрос на отключение: {platform}")
 
     def _save_and_close(self):
-        print("💾 Сохранение настроек...")
         if hasattr(self.current_section_widget, 'save_data'):
             try:
                 self.current_section_widget.save_data()
                 self.settings_applied.emit()
             except Exception as e:
-                print(f"⚠️ Ошибка: {e}")
+                print(f"⚠️ Ошибка сохранения: {e}")
         self.close()
 
     def closeEvent(self, event):
